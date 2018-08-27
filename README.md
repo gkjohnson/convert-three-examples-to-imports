@@ -2,9 +2,11 @@
 
 Script for converting files javascript and html files in the examples folder of the [THREE.js](https://github.com/mrdoob/three.js) repo to use es6 imports.
 
-## Assumptions
+## Assumptions & Exceptions
 
 - Exported objects from a script are added onto the global `THREE` object.
+- `RaytraceWorker.js` is excluded from the transformation because it is to be loaded into a web worker.
+- `libs` is excluded because they are external libraries.
 
 ## Process
 
