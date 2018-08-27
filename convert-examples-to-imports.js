@@ -3,6 +3,10 @@ const path = require( 'path' );
 
 // Get the absolute path to the built THREE.js module
 const ThreePath = path.join( __dirname, 'build/three.module.js' );
+const ignoreExports = [
+	'Float32BufferAttribute'
+];
+
 
 // Walk down the directory structure
 function walk( dir, cb ) {
@@ -61,7 +65,6 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			let name = match[ 1 ];
 			if ( name.indexOf( '.' ) !== - 1 ) name = name.split( '.' )[ 0 ];
 
-			names[ name ] = true;
 
 			// Check for dupes and save it
 			if ( name in name2path && name2path[ name ] !== path2 ) {
@@ -73,9 +76,16 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 				dupedNames.push( name );
 
 			}
-			name2path[ name ] = path2;
-			path2names[ path2 ] = path2names[ path2 ] || [];
-			path2names[ path2 ].push( name );
+
+			if ( ! names[ name ] && ! ignoreExports.includes( name ) ) {
+
+				name2path[ name ] = path2;
+				path2names[ path2 ] = path2names[ path2 ] || [];
+				path2names[ path2 ].push( name );
+
+			}
+
+			names[ name ] = true;
 
 		}
 
@@ -99,7 +109,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		// Define the new local reference at the top of the file
 		let exportInfo =
 			Object.keys( names )
-				.map( n => `var ${ n } = null;` )
+				.map( n => `var ${ n };` )
 				.join( '\n' );
 
 		// Add those references below the author comment
@@ -140,26 +150,28 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 		// track all of the paths that are implicitly referenced by accessing data on the THREE object
 		const referencedPaths = {};
-		Object.entries( ( [ name, p ] ) => {
+		Object
+			.entries( name2path )
+			.forEach( ( [ name, p ] ) => {
 
-			// Find all exports that are referenced
-			const re = new RegExp( `THREE\\.${ name }`, 'g' );
-			if ( re.test( newContents ) ) {
+				// Find all exports that are referenced
+				const re = new RegExp( `THREE\\.${ name }`, 'g' );
+				if ( re.test( newContents ) ) {
 
-				newContents = newContents.replace( re, name );
+					newContents = newContents.replace( re, name );
 
-				referencedPaths = referencedPaths[ p ] || [];
-				referencedPaths.push( name );
+					referencedPaths[ p ] = referencedPaths[ p ] || [];
+					referencedPaths[ p ].push( name );
 
-				if ( dupedNames.indexOf( name ) !== - 1 ) {
+					if ( dupedNames.includes( name ) ) {
 
-					console.error( `Duped export "${ name }" referenced in : `, path2 );
+						console.error( `Duped export "${ name }" referenced in : `, path2 );
+
+					}
 
 				}
 
-			}
-
-		} );
+			} );
 
 		// Early out if there are no references to exported objects or to THREE
 		if ( ! /THREE\./g.test( newContents ) && Object.keys( referencedPaths ).length === 0 ) return;
@@ -176,7 +188,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 				.entries( referencedPaths )
 				.map( ( [ p, names ] ) => {
 
-					let relpath = path2.relative( directory, p );
+					let relpath = path.relative( directory, p );
 					if ( relpath[ 0 ] !== '.' ) relpath = `./${ relpath }`;
 
 					return `import { ${ names.join( ', ' ) } } from '${ relpath.replace( /\\/g, '/' ) }';`;
@@ -251,6 +263,9 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 				// if this is a remaining script with src tag then skip it
 				if ( /<script.*?src\s*=/.test( tag ) ) return orig;
 
+				const scriptTypeMatch = tag.match( /<script.*?type\s*=\s*"(.*?)"/ );
+				if ( scriptTypeMatch && scriptTypeMatch[ 1 ] !== 'type/javascript' ) return orig;
+
 				// replace the exported references on THREE with the raw names
 				let newBody = body;
 				scriptImports.forEach( si => {
@@ -278,7 +293,15 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 								path2names[ si ]
 									.filter( n => new RegExp( `THREE\\.${ n }` ).test( body ) );
 
-							return `${ tabs }import { ${ names.join( ', ' ) } } from '${ relpath.replace( /\\/g, '/' ) }';\n`;
+							if ( names.length === 0 ) {
+
+								return '';
+
+							} else {
+
+								return `${ tabs }import { ${ names.join( ', ' ) } } from '${ relpath.replace( /\\/g, '/' ) }';\n`;
+
+							}
 
 						} )
 						.join( '' )
