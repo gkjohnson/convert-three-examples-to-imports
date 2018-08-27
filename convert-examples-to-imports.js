@@ -2,7 +2,7 @@ const fs = require( 'fs' );
 const path = require( 'path' );
 
 // Get the absolute path to the built THREE.js module
-const ThreePath = path.join( __dirname, 'build/three.module.js' );
+const moduleThreePath = path.join( __dirname, 'build/three.module.js' );
 const ignoreExports = [
 	'Float32BufferAttribute'
 ];
@@ -204,7 +204,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		const importInfo =
 			(
 				/THREE\./g.test( newContents ) ?
-					`import * as THREE from '${ path.relative( directory, ThreePath ).replace( /\\/g, '/' ) }';\n` :
+					`import * as THREE from '${ path.relative( directory, moduleThreePath ).replace( /\\/g, '/' ) }';\n` :
 					''
 			)
 			+ Object
@@ -252,7 +252,14 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			// remove the script imports that were changed to es6 imports
 			const extracted =
 				matches
-					.map( s => s.match( /<script\s*src=["'](.*?)["']\s*>/ )[ 1 ] )
+					.map( s => s.match( /<script\s*src=["'](.*?)["']\s*>/ )[ 1 ] );
+
+			const threeTags =
+				extracted
+					.filter( s => /((three\.min\.js)|(three\.js))$/.test( s ) );
+
+			const filtered =
+				extracted
 					.filter( s => {
 
 						s = `./${ s }`;
@@ -263,12 +270,15 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 			// convert the extracted tags to absolute paths
 			scriptImports =
-				extracted
+				filtered
 					.map( s => `./${ s }` )
 					.map( p => path.join( directory, p ) );
 
 			// remove the script tags
-			extracted.forEach( e => {
+			[
+				...extracted,
+				...threeTags
+			].forEach( e => {
 
 				newContents = newContents.replace( new RegExp( `<script.*?src\s*=\s*["']${ e }["'].*?>.*?</script>`, 'g' ), '' );
 
@@ -307,7 +317,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 				newBody =
 
 					// Add a THREE import
-					`\n${ tabs }import * as THREE from '${ path.relative( directory, ThreePath ).replace( /\\/g, '/' ) }';\n`
+					`\n${ tabs }import * as THREE from '${ path.relative( directory, moduleThreePath ).replace( /\\/g, '/' ) }';\n`
 
 					// Add the imports
 					+ scriptImports
