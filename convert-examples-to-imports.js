@@ -7,6 +7,10 @@ const ignoreExports = [
 	'Float32BufferAttribute'
 ];
 
+const ignoreFiles = [
+	'js/renderers/RaytracingWorker.js'
+];
+
 
 // Walk down the directory structure
 function walk( dir, cb ) {
@@ -48,6 +52,13 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			return;
 
 		}
+
+		if ( ignoreFiles.filter( p => path2.replace( /\\/g, '/' ).indexOf( p ) !== - 1 ).length ) {
+
+			return;
+
+		}
+
 
 		// file contents
 		const contents = fs.readFileSync( path2, { encoding: 'utf8' } );
@@ -140,9 +151,21 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 // Import the newly exported objects into other files
 walk( path.join( __dirname, 'examples' ), path2 => {
 
+
+	if ( ignoreFiles.filter( p => path2.replace( /\\/g, '/' ).indexOf( p ) !== - 1 ).length ) {
+
+		return;
+
+	}
+
+
 	if ( /\.js$/.test( path2 ) ) {
 
-		if ( ! path2names[ path2 ] ) return;
+		if ( ! path2names[ path2 ] ) {
+
+			return;
+
+		}
 
 		// file contents and the modified version
 		const contents = fs.readFileSync( path2, { encoding: 'utf8' } );
@@ -221,7 +244,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		const directory = path.dirname( path2 );
 
 		// all script tags that import example files
-		const matches = contents.match( /<script\s*src\s*=\s*".*?"\s*>/g );
+		const matches = contents.match( /<script\s*src\s*=\s*["'].*?["']\s*>/g );
 		let scriptImports = [];
 
 		if ( matches ) {
@@ -229,7 +252,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			// remove the script imports that were changed to es6 imports
 			const extracted =
 				matches
-					.map( s => s.match( /<script\s*src="(.*?)"\s*>/ )[ 1 ] )
+					.map( s => s.match( /<script\s*src=["'](.*?)["']\s*>/ )[ 1 ] )
 					.filter( s => {
 
 						s = `./${ s }`;
@@ -247,7 +270,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			// remove the script tags
 			extracted.forEach( e => {
 
-				newContents = newContents.replace( new RegExp( `<script.*?src\s*=\s*"${ e }".*?>.*?</script>`, 'g' ), '' );
+				newContents = newContents.replace( new RegExp( `<script.*?src\s*=\s*["']${ e }["'].*?>.*?</script>`, 'g' ), '' );
 
 			} );
 
@@ -263,7 +286,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 				// if this is a remaining script with src tag then skip it
 				if ( /<script.*?src\s*=/.test( tag ) ) return orig;
 
-				const scriptTypeMatch = tag.match( /<script.*?type\s*=\s*"(.*?)"/ );
+				const scriptTypeMatch = tag.match( /<script.*?type\s*=\s*["'](.*?)["']/ );
 				if ( scriptTypeMatch && scriptTypeMatch[ 1 ] !== 'type/javascript' ) return orig;
 
 				// replace the exported references on THREE with the raw names
@@ -276,7 +299,11 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 				} );
 
 				// get indentation for the new statements
-				const tabs = body.match( /\t+/ )[ 0 ];
+				const tabsMatch = body.match( /\t+/ );
+				const tabs = tabsMatch ? tabsMatch[ 0 ] : '\t\t';
+
+				if ( ! tabsMatch ) console.error( `couldn't find tabs for file ${ path2 }` );
+
 				newBody =
 
 					// Add a THREE import
