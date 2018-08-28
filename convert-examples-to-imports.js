@@ -276,7 +276,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 			// remove the script tags
 			[
-				...extracted,
+				...filtered,
 				...threeTags
 			].forEach( e => {
 
@@ -307,6 +307,10 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 						.forEach( n => newBody = newBody.replace( new RegExp( `THREE.${ n }`, 'g' ), n ) );
 
 				} );
+
+				newBody = newBody.replace( /Detector/g, 'window.Detector' );
+				newBody = newBody.replace( /Stats/g, 'window.Stats' );
+				newBody = newBody.replace( /dat\.GUI/g, 'window.dat.GUI' );
 
 				// get indentation for the new statements
 				const tabsMatch = body.match( /\t+/ );
