@@ -20,8 +20,11 @@ function mangleName( name ) {
 function removeComments( str ) {
 
 	return str
+		// .replace( /`[^`]*?`/g, '' )
+		// .replace( /'[^']*?'/g, '' )
+		// .replace( /"[^"]*?"/g, '' )
 		.replace( /\/\*[\s\S]*?\*\//g, '' )
-		.replace( /\/\/[\s\S]*?\n/g, '' );
+		.replace( /\/\/[\s\S]*?\n/g, '' )
 
 }
 
@@ -50,6 +53,7 @@ function walk( dir, cb ) {
 // exported names to the paths that export them and vice versa
 const name2path = {};
 const path2names = {};
+const rawImports = {};
 
 // duplicate names
 const dupedNames = [];
@@ -174,12 +178,6 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 	if ( /\.js$/.test( path2 ) ) {
 
-		if ( ! path2names[ path2 ] ) {
-
-			return;
-
-		}
-
 		// file contents and the modified version
 		const contents = fs.readFileSync( path2, { encoding: 'utf8' } );
 		const trimmedContents = removeComments( contents );
@@ -250,9 +248,27 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 		}
 
+		if ( Object.keys( referencedPaths ).length === 0 && ! ( path2 in path2names ) ) {
+
+			rawImports[ path2 ] = true;
+
+		}
+
 		fs.writeFileSync( path2, newContents, { encoding: 'utf8' } );
 
-	} else if ( /\.html$/.test( path2 ) ) {
+	}
+
+} );
+
+walk( path.join( __dirname, 'examples' ), path2 => {
+
+	if ( ignoreFiles.filter( p => path2.replace( /\\/g, '/' ).indexOf( p ) !== - 1 ).length ) {
+
+		return;
+
+	}
+
+	if ( /\.html$/.test( path2 ) ) {
 
 		// file contents and the modified version
 		const contents = fs.readFileSync( path2, { encoding: 'utf8' } );
@@ -282,7 +298,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 						s = `./${ s }`;
 						s = path.join( directory, s );
-						return s in path2names;
+						return s in path2names || s in rawImports;
 
 					} );
 
@@ -334,31 +350,46 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 							let relpath = path.relative( directory, si );
 							if ( relpath[ 0 ] !== '.' ) relpath = `./${ relpath }`;
 
-							const names =
-								path2names[ si ]
-									.filter( n => new RegExp( `THREE\\.${ n }` ).test( trimmedBody ) );
+							if ( si in rawImports ) {
 
-							if ( names.length === 0 ) {
-
-								return null;
+								return `${ tabs }import '${ relpath.replace( /\\/g, '/' ) }';\n`;
 
 							} else {
 
-								return `${ tabs }import { ${ names.join( ', ' ) } } from '${ relpath.replace( /\\/g, '/' ) }';\n`;
+								const names =
+									path2names[ si ]
+										.filter( n => new RegExp( `THREE\\.${ n }` ).test( trimmedBody ) );
+
+								if ( ! names || names.length === 0 ) {
+
+									return null;
+
+								} else {
+
+									return `${ tabs }import { ${ names.join( ', ' ) } } from '${ relpath.replace( /\\/g, '/' ) }';\n`;
+
+								}
 
 							}
 
 						} )
 						.filter( i => ! ! i );
 
-				if ( filteredImports.length === 0 ) return orig;
+				// TODO: Checking if THREE is defined means it gets added no matter what, which means that some
+				// examples that would function without imports don't work. This is related to the `rawimports` list,
+				// as well. It's possible that that should be derived from a whitelist.
+				if ( filteredImports.length === 0 && ! /THREE\./.test( trimmedBody ) ) return orig;
 
 
 				let newBody = body;
 				scriptImports.forEach( si => {
 
-					path2names[ si ]
-						.forEach( n => newBody = newBody.replace( new RegExp( `THREE\\.${ n }([^A-Za-z0-9_$])`, 'g' ), ( orig, next ) => `${ n }${ next }` ) );
+					if ( si in path2names ) {
+
+						path2names[ si ]
+							.forEach( n => newBody = newBody.replace( new RegExp( `THREE\\.${ n }([^A-Za-z0-9_$])`, 'g' ), ( orig, next ) => `${ n }${ next }` ) );
+
+					}
 
 				} );
 
