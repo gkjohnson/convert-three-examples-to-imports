@@ -43,3 +43,5 @@
 
 #### Other
 - Some files don't get a new line after the initial export definitions 
+- The Node definitions are already of the import / export form but still rely on global THREE
+- Ignore comments
