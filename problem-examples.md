@@ -33,10 +33,10 @@
 
 #### Can't Test
 
-- _materials / video?_
-- _materials / video / webcam?_
-- _vive / paint?_
-- _vive / sculpt?_
+- materials / video?
+- materials / video / webcam?
+- vive / paint?
+- vive / sculpt?
 - camera / cinematic (relies on global camera definition. fix separately)
 - kinect?
 
@@ -45,8 +45,6 @@
 - loader / x (wrapped in UMD)
 - modifier / subdivision (modifies THREE object with model definitions. fix separately)
 - postprocessing / dof (using the wrong bokeh shader, should use bokeh2)
-- shaders / ocean (double underscore in shader?)
-- shaders / sky (double underscore in shader)
 - shadowmesh (click button) (button listener expects global function. fix separately)
 - raytracing sandbox (button refers to function in module code. fix separately)
 
