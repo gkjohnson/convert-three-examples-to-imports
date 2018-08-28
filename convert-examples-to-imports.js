@@ -11,6 +11,11 @@ const ignoreFiles = [
 	'js/renderers/RaytracingWorker.js'
 ];
 
+function mangleName( name ) {
+
+	return `__${ name }`;
+
+};
 
 // Walk down the directory structure
 function walk( dir, cb ) {
@@ -113,14 +118,14 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		Object.keys( names )
 			.forEach( n => {
 
-				newContents = newContents.replace( new RegExp( `THREE\.${ n }`, 'g' ), n );
+				newContents = newContents.replace( new RegExp( `THREE\.${ n }`, 'g' ), mangleName( n ) );
 
 			} );
 
 		// Define the new local reference at the top of the file
 		let exportInfo =
 			Object.keys( names )
-				.map( n => `var ${ n };` )
+				.map( n => `var ${ mangleName( n ) };` )
 				.join( '\n' );
 
 		// Add those references below the author comment
@@ -140,7 +145,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		// Export the new item
 		newContents =
 			newContents
-			+ `\nexport { ${ Object.keys( names ).join( ', ' ) } };\n`;
+			+ `\nexport { ${ Object.keys( names ).map( n => `${ mangleName( n ) } as ${ n }` ).join( ', ' ) } };\n`;
 
 		fs.writeFileSync( path2, newContents, { encoding: 'utf8' } );
 
