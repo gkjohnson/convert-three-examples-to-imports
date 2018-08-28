@@ -8,7 +8,6 @@
 - lines / fat (hilbert3D not converted)
 - lines / fat / wireframe (WireframeGeometry not referenced by WireframeGeometry2)
 - loader / nodes (Node is a reserved name)
-- loader / nrrd (VolumeSlice is not imported for Volume. Volume is imported into VolumeSlice?)
 - loader / sea3d
 - loader / sea3d / hierarchy
 - loader / sea3d / keyframe
@@ -32,7 +31,7 @@
 - postprocessing / nodes (Node definition)
 - postprocessing / nodes / pass (Node definition)
 - shaders / oceans2 (needs uniforms list??? Ocean shaders don't extend the shaderLib, wants global THREE)
-- shadowmesh (click button) (button listener expects global function)
+- shadowmesh (click button) (button listener expects global function, fix)
 - sprites / nodes (Node definition)
 - video / panorama / equirectangular (not converted at all?)
 - buffergeometry / constructed / from / geometry (trackball controls not made import in html)
@@ -44,4 +43,4 @@
 #### Other
 - Some files don't get a new line after the initial export definitions 
 - The Node definitions are already of the import / export form but still rely on global THREE
-- Ignore comments
+- Handle cases where the export is set via `[]`
