@@ -17,6 +17,14 @@ function mangleName( name ) {
 
 };
 
+function removeComments( str ) {
+
+	return str
+		.replace( /\/\*[\s\S]*?\*\//g, '' )
+		.replace( /\/\/[\s\S]*?\n/g, '' );
+
+}
+
 // Walk down the directory structure
 function walk( dir, cb ) {
 
@@ -67,6 +75,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 		// file contents
 		const contents = fs.readFileSync( path2, { encoding: 'utf8' } );
+		const trimmedContents = removeComments( contents );
 
 		// regex for finding objects that were added to THREE
 		const regex = /THREE.([^.\s]+)\s*=[^=]/g;
@@ -74,7 +83,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		while ( true ) {
 
 			// exit if we don't find anything more
-			const match = regex.exec( contents );
+			const match = regex.exec( trimmedContents );
 			if ( ! match ) break;
 
 			// grab the item directly on THREE that was changed
@@ -118,7 +127,8 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		Object.keys( names )
 			.forEach( n => {
 
-				newContents = newContents.replace( new RegExp( `THREE\.${ n }`, 'g' ), mangleName( n ) );
+				const re = new RegExp( `THREE\.${ n }(\\W)`, 'g' );
+				newContents = newContents.replace( re, ( orig, next ) => `${ mangleName( n ) }${ next }` );
 
 			} );
 
@@ -174,6 +184,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 		// file contents and the modified version
 		const contents = fs.readFileSync( path2, { encoding: 'utf8' } );
+		const trimmedContents = removeComments( contents );
 		let newContents = contents;
 
 		// track all of the paths that are implicitly referenced by accessing data on the THREE object
@@ -184,7 +195,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 				// Find all exports that are referenced
 				const re = new RegExp( `THREE\\.${ name }`, 'g' );
-				if ( re.test( newContents ) ) {
+				if ( re.test( trimmedContents ) ) {
 
 					newContents = newContents.replace( re, name );
 
@@ -202,13 +213,13 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			} );
 
 		// Early out if there are no references to exported objects or to THREE
-		if ( ! /THREE\./g.test( newContents ) && Object.keys( referencedPaths ).length === 0 ) return;
+		if ( ! /THREE\./g.test( trimmedContents ) && Object.keys( referencedPaths ).length === 0 ) return;
 
 		// Form the import statements for three and the other imported files
 		const directory = path.dirname( path2 );
 		const importInfo =
 			(
-				/THREE\./g.test( newContents ) ?
+				/THREE\./g.test( trimmedContents ) ?
 					`import * as THREE from '${ path.relative( directory, moduleThreePath ).replace( /\\/g, '/' ) }';\n` :
 					''
 			)
@@ -219,9 +230,13 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 					let relpath = path.relative( directory, p );
 					if ( relpath[ 0 ] !== '.' ) relpath = `./${ relpath }`;
 
-					return `import { ${ names.join( ', ' ) } } from '${ relpath.replace( /\\/g, '/' ) }';`;
+					const filteredNames = names.filter( n => new RegExp( `THREE\\.${ n }` ).test( trimmedContents ) );
+
+					if ( filteredNames.length === 0 ) return null;
+					else return `import { ${ filteredNames.join( ', ' ) } } from '${ relpath.replace( /\\/g, '/' ) }';`;
 
 				} )
+				.filter( s => ! ! s )
 				.join( '\n' );
 
 		// Add the imports after the author comment
@@ -305,6 +320,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 				if ( scriptTypeMatch && scriptTypeMatch[ 1 ] !== 'type/javascript' ) return orig;
 
 				// replace the exported references on THREE with the raw names
+				const trimmedBody = removeComments( body );
 				let newBody = body;
 				scriptImports.forEach( si => {
 
@@ -337,7 +353,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 							const names =
 								path2names[ si ]
-									.filter( n => new RegExp( `THREE\\.${ n }` ).test( body ) );
+									.filter( n => new RegExp( `THREE\\.${ n }` ).test( trimmedBody ) );
 
 							if ( names.length === 0 ) {
 
