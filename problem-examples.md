@@ -51,4 +51,3 @@
 ## Other
 - Some files don't get a new line after the initial export definitions 
 - Node shader code may have to be rearchitected
-- Handle cases where the export is set via `[]`
