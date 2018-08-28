@@ -2,9 +2,18 @@
 
 Script for converting the javascript and html files in the examples folder of the [THREE.js](https://github.com/mrdoob/three.js) repo to use es6 imports.
 
+[Converted Three.js Branch](https://github.com/gkjohnson/three.js/tree/examples-to-imports)
+
+[Converted Example Comparison](https://rawgit.com/gkjohnson/three.js/examples-to-imports/examples/index.module.html#webgl_animation_cloth)
+
+## Notes
+
 [Remaining Problem Examples](./problem-examples.md)
 
+[Converted Files](./converted-files.md)
+
 [Unconverted Files](./unconverted-files.md)
+
 
 ## Assumptions & Exceptions
 
