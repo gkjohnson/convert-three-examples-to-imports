@@ -1,6 +1,9 @@
 const fs = require( 'fs' );
 const path = require( 'path' );
 
+const OVERWRITE_FILES = false;
+const REMOVE_OLD_FILES = true;
+
 // Get the absolute path to the built THREE.js module
 const moduleThreePath = path.join( __dirname, 'build/three.module.js' );
 const ignoreExports = [
@@ -15,7 +18,7 @@ function mangleName( name ) {
 
 	return `__${ name }`;
 
-};
+}
 
 function removeComments( str ) {
 
@@ -24,7 +27,7 @@ function removeComments( str ) {
 		// .replace( /'[^']*?'/g, '' )
 		// .replace( /"[^"]*?"/g, '' )
 		.replace( /\/\*[\s\S]*?\*\//g, '' )
-		.replace( /\/\/[\s\S]*?\n/g, '' )
+		.replace( /\/\/[\s\S]*?\n/g, '' );
 
 }
 
@@ -47,6 +50,22 @@ function walk( dir, cb ) {
 		}
 
 	} );
+
+}
+
+function transformName( dir ) {
+
+	if ( OVERWRITE_FILES ) {
+
+		return dir;
+
+	} else {
+
+		return dir
+			.replace( /\.js$/, '.module.js' )
+			.replace( /\.html$/, '.module.html' );
+
+	}
 
 }
 
@@ -161,7 +180,8 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			newContents
 			+ `\nexport { ${ Object.keys( names ).map( n => `${ mangleName( n ) } as ${ n }` ).join( ', ' ) } };\n`;
 
-		fs.writeFileSync( path2, newContents, { encoding: 'utf8' } );
+		if ( REMOVE_OLD_FILES ) fs.unlinkSync( path2 );
+		fs.writeFileSync( transformName( path2 ), newContents, { encoding: 'utf8' } );
 
 	}
 
@@ -169,6 +189,8 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 // Import the newly exported objects into other files
 walk( path.join( __dirname, 'examples' ), path2 => {
+
+	if ( ! OVERWRITE_FILES && ! /\.module\.js$/.test( path2 ) ) return;
 
 	if ( ignoreFiles.filter( p => path2.replace( /\\/g, '/' ).indexOf( p ) !== - 1 ).length ) {
 
@@ -225,11 +247,12 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 					let relpath = path.relative( directory, p );
 					if ( relpath[ 0 ] !== '.' ) relpath = `./${ relpath }`;
+					relpath = relpath.replace( /\\/g, '/' );
 
 					const filteredNames = names.filter( n => new RegExp( `THREE\\.${ n }` ).test( trimmedContents ) );
 
 					if ( filteredNames.length === 0 ) return null;
-					else return `import { ${ filteredNames.join( ', ' ) } } from '${ relpath.replace( /\\/g, '/' ) }';`;
+					else return `import { ${ filteredNames.join( ', ' ) } } from '${ transformName( relpath ) }';`;
 
 				} )
 				.filter( s => ! ! s )
@@ -321,7 +344,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		}
 
 		// If nothing is imported then do nothing
-		if ( scriptImports === null || scriptImports.length === 0 ) return;
+		// if ( OVERWRITE_FILES && scriptImports === null || scriptImports.length === 0 ) return;
 
 		// replace the script tag body contents in the html
 		newContents =
@@ -349,10 +372,11 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 							let relpath = path.relative( directory, si );
 							if ( relpath[ 0 ] !== '.' ) relpath = `./${ relpath }`;
+							relpath = relpath.replace( /\\/g, '/' );
 
 							if ( si in rawImports ) {
 
-								return `${ tabs }import '${ relpath.replace( /\\/g, '/' ) }';\n`;
+								return `${ tabs }import '${ transformName( relpath ) }';\n`;
 
 							} else {
 
@@ -366,7 +390,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 								} else {
 
-									return `${ tabs }import { ${ names.join( ', ' ) } } from '${ relpath.replace( /\\/g, '/' ) }';\n`;
+									return `${ tabs }import { ${ names.join( ', ' ) } } from '${ transformName( relpath ) }';\n`;
 
 								}
 
@@ -411,7 +435,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 			} );
 
-		fs.writeFileSync( path2, newContents, { encoding: 'utf8' } );
+		fs.writeFileSync( transformName( path2 ), newContents, { encoding: 'utf8' } );
 
 	}
 
