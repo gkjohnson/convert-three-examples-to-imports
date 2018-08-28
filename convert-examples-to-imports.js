@@ -11,7 +11,16 @@ const ignoreExports = [
 ];
 
 const ignoreFiles = [
-	'js/renderers/RaytracingWorker.js'
+	/js\/renderers\/RaytracingWorker\.js$/,
+	/js\/nodes\//,
+	/js\/loaders\/sea3d\//,
+	/\/XLoader\.js$/,
+	/js\/libs\//,
+	/js\/loaders\/NodeMaterialLoader\.js$/
+];
+
+const exportsNothing = [
+	/RectAreaLightUniformsLib\.js/
 ];
 
 function mangleName( name ) {
@@ -69,10 +78,21 @@ function transformName( dir ) {
 
 }
 
+function isIgnored( p ) {
+
+	return ignoreFiles.filter( re => re.test( p.replace( /\\/g, '/' ) ) ).length !== 0;
+
+}
+
+function doesExportNothing( p ) {
+
+	return exportsNothing.filter( re => re.test( p.replace( /\\/g, '/' ) ) ).length !== 0;
+
+}
+
 // exported names to the paths that export them and vice versa
 const name2path = {};
 const path2names = {};
-const rawImports = {};
 
 // duplicate names
 const dupedNames = [];
@@ -81,15 +101,11 @@ const dupedNames = [];
 // onto the THREE object
 walk( path.join( __dirname, 'examples' ), path2 => {
 
+	if ( /\.module\.js$/.test( path2 ) ) return;
+
 	if ( /\.js$/.test( path2 ) ) {
 
-		if ( /js[\/\\]libs/g.test( path2 ) ) {
-
-			return;
-
-		}
-
-		if ( ignoreFiles.filter( p => path2.replace( /\\/g, '/' ).indexOf( p ) !== - 1 ).length ) {
+		if ( isIgnored( path2 ) ) {
 
 			return;
 
@@ -138,10 +154,14 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		}
 
 		// Don't do anything if the file wasn't exporting data
-		if ( Object.keys( names ).length === 0 ) {
+		if ( Object.keys( names ).length === 0 && ! doesExportNothing( path2 ) ) {
 
 			delete path2names[ path2 ];
 			return;
+
+		} else {
+
+			path2names[ path2 ] = path2names[ path2 ] || [];
 
 		}
 
@@ -192,7 +212,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 	if ( ! OVERWRITE_FILES && ! /\.module\.js$/.test( path2 ) ) return;
 
-	if ( ignoreFiles.filter( p => path2.replace( /\\/g, '/' ).indexOf( p ) !== - 1 ).length ) {
+	if ( isIgnored( path2 ) ) {
 
 		return;
 
@@ -271,12 +291,6 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 		}
 
-		if ( Object.keys( referencedPaths ).length === 0 && ! ( path2 in path2names ) ) {
-
-			rawImports[ path2 ] = true;
-
-		}
-
 		fs.writeFileSync( path2, newContents, { encoding: 'utf8' } );
 
 	}
@@ -285,7 +299,9 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 walk( path.join( __dirname, 'examples' ), path2 => {
 
-	if ( ignoreFiles.filter( p => path2.replace( /\\/g, '/' ).indexOf( p ) !== - 1 ).length ) {
+	if ( /\.module\.html/.test( path2 ) ) return;
+
+	if ( isIgnored( path2 ) ) {
 
 		return;
 
@@ -321,7 +337,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 						s = `./${ s }`;
 						s = path.join( directory, s );
-						return s in path2names || s in rawImports;
+						return s in path2names;
 
 					} );
 
@@ -374,27 +390,26 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 							if ( relpath[ 0 ] !== '.' ) relpath = `./${ relpath }`;
 							relpath = relpath.replace( /\\/g, '/' );
 
-							if ( si in rawImports ) {
+							const origNames = path2names[ si ];
+							const names =
+								origNames
+									.filter( n => new RegExp( `THREE\\.${ n }` ).test( trimmedBody ) );
+
+							if ( origNames.length === 0 ) {
 
 								return `${ tabs }import '${ transformName( relpath ) }';\n`;
 
+							} else if ( names.length === 0 ) {
+
+								return null;
+
 							} else {
 
-								const names =
-									path2names[ si ]
-										.filter( n => new RegExp( `THREE\\.${ n }` ).test( trimmedBody ) );
-
-								if ( ! names || names.length === 0 ) {
-
-									return null;
-
-								} else {
-
-									return `${ tabs }import { ${ names.join( ', ' ) } } from '${ transformName( relpath ) }';\n`;
-
-								}
+								return `${ tabs }import { ${ names.join( ', ' ) } } from '${ transformName( relpath ) }';\n`;
 
 							}
+
+
 
 						} )
 						.filter( i => ! ! i );
