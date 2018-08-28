@@ -166,7 +166,6 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 // Import the newly exported objects into other files
 walk( path.join( __dirname, 'examples' ), path2 => {
 
-
 	if ( ignoreFiles.filter( p => path2.replace( /\\/g, '/' ).indexOf( p ) !== - 1 ).length ) {
 
 		return;
@@ -194,10 +193,10 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			.forEach( ( [ name, p ] ) => {
 
 				// Find all exports that are referenced
-				const re = new RegExp( `THREE\\.${ name }`, 'g' );
+				const re = new RegExp( `THREE\\.${ name }(\\W)`, 'g' );
 				if ( re.test( trimmedContents ) ) {
 
-					newContents = newContents.replace( re, name );
+					newContents = newContents.replace( re, ( orig, next ) => `${ name }${ next }` );
 
 					referencedPaths[ p ] = referencedPaths[ p ] || [];
 					referencedPaths[ p ].push( name );
@@ -264,7 +263,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		const directory = path.dirname( path2 );
 
 		// all script tags that import example files
-		const matches = contents.match( /<script\s*src\s*=\s*["'].*?["']\s*>/g );
+		const matches = contents.match( /<script.*?src\s*=\s*["'].*?["'].*?>/g );
 		let scriptImports = [];
 
 		if ( matches ) {
@@ -272,7 +271,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			// remove the script imports that were changed to es6 imports
 			const extracted =
 				matches
-					.map( s => s.match( /<script\s*src=["'](.*?)["']\s*>/ )[ 1 ] );
+					.map( s => s.match( /<script.*?src=["'](.*?)["'].*?>/ )[ 1 ] );
 
 			const threeTags =
 				extracted
