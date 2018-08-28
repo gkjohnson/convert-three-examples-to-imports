@@ -16,18 +16,18 @@ Script for converting the javascript and html files in the examples folder of th
 THREE.ColladaExporter = function () {};
 ```
 
-2. Modify the files with `export` statements for the found objects. Declare the exported variable at the top of the script because it may not be modified in the root scope.
+2. Modify the files with `export` statements for the found objects. Declare the exported variable at the top of the script because it may not be modified in the root scope. Exported variable names get two underscores prepended to avoid conflicts with internal variable names.
 
 ```js
-var ColladaExporter;
+var __ColladaExporter;
 
 // ...
 
-ColladaExporter = function () {};
+__ColladaExporter = function () {};
 
 // ...
 
-export { ColladaExporter };
+export { __ColladaExporter as ColladaExporter };
 ```
 
 3. Traverse all example javascript files and check which of the exported members are used in the file. Add `import` statements for all of the imported objects as well as `THREE` if it's used.
