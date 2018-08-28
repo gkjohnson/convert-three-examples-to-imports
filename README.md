@@ -7,6 +7,15 @@ Script for converting the javascript and html files in the examples folder of th
 - Exported objects from a script are added onto the global `THREE` object.
 - `RaytraceWorker.js` is excluded from the transformation because it is to be loaded into a web worker.
 - `libs` is excluded because they are external libraries.
+- **TODO** Exclude `Nodes` and `SEA3D` libraries
+
+## Final Structure
+
+Every HTML and javascript example file will be converted to a `<name>.module.js` and `<name>.module.html` variant.
+
+The module javascript versions will be converted to UMD versions with the original name.
+
+Some examples will only work in the module-less environment because their scripts will need to be manually converted.
 
 ## Process
 
@@ -71,4 +80,4 @@ to
 </script>
 ```
 
-5. **TODO** Convert global definition references such as `Detector` and `Stats` and `dat` to use `window.*`.
+5. Convert global definition references such as `Detector` and `Stats` and `dat` to use `window.*`.
