@@ -127,7 +127,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		Object.keys( names )
 			.forEach( n => {
 
-				const re = new RegExp( `THREE\.${ n }(\\W)`, 'g' );
+				const re = new RegExp( `THREE\.${ n }([^A-Za-z0-9_$])`, 'g' );
 				newContents = newContents.replace( re, ( orig, next ) => `${ mangleName( n ) }${ next }` );
 
 			} );
@@ -172,7 +172,6 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 	}
 
-
 	if ( /\.js$/.test( path2 ) ) {
 
 		if ( ! path2names[ path2 ] ) {
@@ -193,7 +192,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			.forEach( ( [ name, p ] ) => {
 
 				// Find all exports that are referenced
-				const re = new RegExp( `THREE\\.${ name }(\\W)`, 'g' );
+				const re = new RegExp( `THREE\\.${ name }([^A-Za-z0-9_$])`, 'g' );
 				if ( re.test( trimmedContents ) ) {
 
 					newContents = newContents.replace( re, ( orig, next ) => `${ name }${ next }` );
@@ -320,17 +319,6 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 				// replace the exported references on THREE with the raw names
 				const trimmedBody = removeComments( body );
-				let newBody = body;
-				scriptImports.forEach( si => {
-
-					path2names[ si ]
-						.forEach( n => newBody = newBody.replace( new RegExp( `THREE.${ n }`, 'g' ), n ) );
-
-				} );
-
-				newBody = newBody.replace( /Detector/g, 'window.Detector' );
-				newBody = newBody.replace( /Stats/g, 'window.Stats' );
-				newBody = newBody.replace( /dat\.GUI/g, 'window.dat.GUI' );
 
 				// get indentation for the new statements
 				const tabsMatch = body.match( /\t+/ );
@@ -338,13 +326,9 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 				if ( ! tabsMatch ) console.error( `couldn't find tabs for file ${ path2 }` );
 
-				newBody =
-
-					// Add a THREE import
-					`\n${ tabs }import * as THREE from '${ path.relative( directory, moduleThreePath ).replace( /\\/g, '/' ) }';\n`
-
-					// Add the imports
-					+ scriptImports
+				// Find the relevant imports for this code block
+				const filteredImports =
+					scriptImports
 						.map( si => {
 
 							let relpath = path.relative( directory, si );
@@ -356,7 +340,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 							if ( names.length === 0 ) {
 
-								return '';
+								return null;
 
 							} else {
 
@@ -365,7 +349,30 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 							}
 
 						} )
-						.join( '' )
+						.filter( i => ! ! i );
+
+				if ( filteredImports.length === 0 ) return orig;
+
+
+				let newBody = body;
+				scriptImports.forEach( si => {
+
+					path2names[ si ]
+						.forEach( n => newBody = newBody.replace( new RegExp( `THREE\\.${ n }([^A-Za-z0-9_$])`, 'g' ), ( orig, next ) => `${ n }${ next }` ) );
+
+				} );
+
+				newBody = newBody.replace( /Detector/g, 'window.Detector' );
+				newBody = newBody.replace( /Stats/g, 'window.Stats' );
+				newBody = newBody.replace( /dat\.GUI/g, 'window.dat.GUI' );
+
+				newBody =
+
+					// Add a THREE import
+					`\n${ tabs }import * as THREE from '${ path.relative( directory, moduleThreePath ).replace( /\\/g, '/' ) }';\n`
+
+					// Add the imports
+					+ filteredImports.join( '' )
 
 					+ newBody;
 
