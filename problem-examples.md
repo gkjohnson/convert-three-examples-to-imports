@@ -40,3 +40,6 @@
 - vive / sculpt?
 - raytracing sandbox (button refers to function in module code)
 - software / lines / splines (hilbert3D not exported)
+
+#### Other
+- Some files don't get a new line after the initial export definitions 
