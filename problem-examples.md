@@ -1,12 +1,11 @@
 # Remaining Problem Examples
 
-- animation / cloth
-- camera / cinematic (relies on global camera definition, fix)
+- animation / cloth (defines variables in other script)
+- camera / cinematic (relies on global camera definition. fix separately)
 - gpgpu / water (GPUComputationRenderer is not exported, not on `THREE`)
 - kinect?
 - lights / rectarealight (RectAreaLightsUniformsLib not converted)
 - lines / fat (hilbert3D not converted)
-- lines / fat / wireframe (WireframeGeometry not referenced by WireframeGeometry2)
 - loader / nodes (Node is a reserved name)
 - loader / sea3d
 - loader / sea3d / hierarchy
@@ -21,23 +20,19 @@
 - materials / video?
 - materials / video / webcam?
 - mirror / nodes (Node definition)
-- modifier / subdivision (modifies THREE object with model definitions)
-- multiple / elements / text (???)
-- octree (not being added as import?)
-- octree / raycasting (not being added as import?)
+- modifier / subdivision (modifies THREE object with model definitions. fix separately)
 - performance / nodes (Node definition)
 - postprocessing / crossfade (scenes.js relies on global THREE and is not converted)
 - postprocessing / dof (using the wrong bokeh shader, should use bokeh2)
 - postprocessing / nodes (Node definition)
 - postprocessing / nodes / pass (Node definition)
 - shaders / oceans2 (needs uniforms list??? Ocean shaders don't extend the shaderLib, wants global THREE)
-- shadowmesh (click button) (button listener expects global function, fix)
+- shadowmesh (click button) (button listener expects global function. fix separately)
 - sprites / nodes (Node definition)
-- video / panorama / equirectangular (not converted at all?)
-- buffergeometry / constructed / from / geometry (trackball controls not made import in html)
+- video / panorama / equirectangular (not converted at all? No references)
 - vive / paint?
 - vive / sculpt?
-- raytracing sandbox (button refers to function in module code)
+- raytracing sandbox (button refers to function in module code. fix separately)
 - software / lines / splines (hilbert3D not exported)
 
 #### Other
