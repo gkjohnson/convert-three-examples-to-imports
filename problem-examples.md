@@ -2,8 +2,6 @@
 
 - animation / cloth
 - camera / cinematic (relies on global camera definition, fix)
-- decals (internal name conflict -- mangle name)
-- geometry / convex (internal name conflict -- mangle name)
 - gpgpu / water (GPUComputationRenderer is not exported, not on `THREE`)
 - kinect?
 - lights / rectarealight (RectAreaLightsUniformsLib not converted)
@@ -29,7 +27,6 @@
 - octree (not being added as import?)
 - octree / raycasting (not being added as import?)
 - performance / nodes (Node definition)
-- physics / convex / break (names aren't exported, mangle names)
 - postprocessing / crossfade (scenes.js relies on global THREE and is not converted)
 - postprocessing / dof (using the wrong bokeh shader, should use bokeh2)
 - postprocessing / nodes (Node definition)
