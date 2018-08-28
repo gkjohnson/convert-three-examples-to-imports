@@ -70,3 +70,5 @@ to
   loader.load(...);
 </script>
 ```
+
+5. **TODO** Convert global definition references such as `Detector` and `Stats` and `dat` to use `window.*`.
