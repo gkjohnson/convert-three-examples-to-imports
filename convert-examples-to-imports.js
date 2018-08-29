@@ -187,6 +187,22 @@ walk( path.join( __dirname, 'examples/js' ), path2 => {
 
 			} );
 
+		// Fix comments that got the name transformed to the mangled one
+		Object.keys( names )
+			.forEach( n => {
+
+				newContents = newContents.replace(
+					/\/\*[\s\S]*?\*\//g,
+					orig => orig.replace( new RegExp( mangleName( n ), 'g' ), n )
+				);
+
+				newContents = newContents.replace(
+					/\/\/[\s\S]*?\n/g,
+					orig => orig.replace( new RegExp( mangleName( n ), 'g' ), n )
+				);
+
+			} );
+
 		// Define the new local reference at the top of the file
 		let exportInfo =
 			Object.keys( names )
