@@ -24,11 +24,11 @@ Script for converting the javascript and html files in the examples folder of th
 
 ## Final Structure
 
-Every javascript file in `examples/js` will be converted into a module in `examples/modules`.
+Every Javascript file in `examples/js` will be converted into a module in `examples/modules`.
 
-HTML files will ahve a `_module` variant created.
+HTML files will have a `_module` variant created.
 
-The module javascript versions will be converted to UMD versions with the original name using rollup.
+The Javascript module versions will be converted to UMD versions with the original name using Rollup.
 
 Some examples will only work in the module-less environment because their scripts will need to be manually converted.
 
@@ -73,7 +73,7 @@ var loader = new ColladaLoader();
 loader.load(...);
 ```
 
-4. Traverse all html example pages and find the script tags which import the javascript files that were convereted to es6 imports. Change the script tags with content to use modules, add the imports at the top, and replace the code with the imported variables
+4. Traverse all html example pages and find the script tags which import the javascript files that were convereted to ES6 imports. Change the script tags with content to use modules if THREE is used, add the imports at the top, and replace the code with the imported variables
 
 ```html
 <script src=".../three.min.js"></script>
