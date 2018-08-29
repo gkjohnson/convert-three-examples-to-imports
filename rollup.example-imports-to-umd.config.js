@@ -6,7 +6,7 @@ const fs = require( 'fs' );
 function createOutput( file ) {
 
 	const inputPath = path.resolve( file );
-	const outputPath = inputPath.replace( /\.module\.js$/, '.js' );
+	const outputPath = inputPath.replace( /[\\\/]examples[\\\/]modules[\\\/]/, '/examples/js/' );
 
 	// Every import is marked as external so the output is 1-to-1. We
 	// assume that that global object should be the THREE object so we
@@ -24,7 +24,9 @@ function createOutput( file ) {
 			file: outputPath,
 
 			globals: () => 'THREE',
-			extend: true
+			extend: true,
+
+			indent: false
 
 		}
 
@@ -57,11 +59,7 @@ function walk( dir, cb ) {
 
 // Gather up all the files
 const files = [];
-walk( './examples/', p => files.push( p ) );
+walk( 'examples/modules/', p => files.push( p ) );
 
 // Create a rollup config for each module.js file
-const rollupConfigs = files
-	.filter( p => /\.module\.js$/.test( p ) )
-	.map( p => createOutput( p ) );
-
-export default rollupConfigs;
+export default files.map( p => createOutput( p ) );
