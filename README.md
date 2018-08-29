@@ -24,9 +24,11 @@ Script for converting the javascript and html files in the examples folder of th
 
 ## Final Structure
 
-Every HTML and javascript example file will be converted to a `<name>.module.js` and `<name>.module.html` variant.
+Every javascript file in `examples/js` will be converted into a module in `examples/modules`.
 
-The module javascript versions will be converted to UMD versions with the original name.
+HTML files will ahve a `_module` variant created.
+
+The module javascript versions will be converted to UMD versions with the original name using rollup.
 
 Some examples will only work in the module-less environment because their scripts will need to be manually converted.
 
