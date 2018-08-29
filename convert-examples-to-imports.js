@@ -2,7 +2,7 @@ const fs = require( 'fs' );
 const path = require( 'path' );
 
 const OVERWRITE_FILES = false;
-const REMOVE_OLD_FILES = true;
+const REMOVE_OLD_FILES = false;
 
 // Get the absolute path to the built THREE.js module
 const moduleThreePath = path.join( __dirname, 'build/three.module.js' );
@@ -20,7 +20,8 @@ const ignoreFiles = [
 ];
 
 const exportsNothing = [
-	/RectAreaLightUniformsLib\.js/
+	/RectAreaLightUniformsLib\.js/,
+	/OceanShaders\.js/
 ];
 
 function mangleName( name ) {
@@ -62,17 +63,25 @@ function walk( dir, cb ) {
 
 }
 
-function transformName( dir ) {
+function transformName( p ) {
 
 	if ( OVERWRITE_FILES ) {
 
-		return dir;
+		return p;
 
 	} else {
 
-		return dir
-			.replace( /\.js$/, '.module.js' )
-			.replace( /\.html$/, '.module.html' );
+		if ( /js$/.test( p ) ) {
+
+			return p.replace( /[\/\\]js[\/\\]/, '/modules/' );
+			// return p.replace( /\.js$/, '.module.js' );
+
+		} else if ( /html$/.test( p ) ) {
+
+			return p.replace( /\.html$/, '_module.html' );
+
+		}
+
 
 	}
 
@@ -96,10 +105,11 @@ const path2names = {};
 
 // duplicate names
 const dupedNames = [];
+const skippedFiles = [];
 
 // Traverse javascript files and find what values were exported
 // onto the THREE object
-walk( path.join( __dirname, 'examples' ), path2 => {
+walk( path.join( __dirname, 'examples/js' ), path2 => {
 
 	if ( /\.module\.js$/.test( path2 ) ) return;
 
@@ -107,6 +117,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 		if ( isIgnored( path2 ) ) {
 
+			skippedFiles.push( path2 );
 			return;
 
 		}
@@ -117,7 +128,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		const trimmedContents = removeComments( contents );
 
 		// regex for finding objects that were added to THREE
-		const regex = /THREE.([^.\s]+)\s*=[^=]/g;
+		const regex = /THREE\.([^.\s]+)\s*=[^=]/g;
 		const names = {};
 		while ( true ) {
 
@@ -157,6 +168,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		if ( Object.keys( names ).length === 0 && ! doesExportNothing( path2 ) ) {
 
 			delete path2names[ path2 ];
+			skippedFiles.push( path2 );
 			return;
 
 		} else {
@@ -170,7 +182,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		Object.keys( names )
 			.forEach( n => {
 
-				const re = new RegExp( `THREE\.${ n }([^A-Za-z0-9_$])`, 'g' );
+				const re = new RegExp( `THREE\\.${ n }([^A-Za-z0-9_$])`, 'g' );
 				newContents = newContents.replace( re, ( orig, next ) => `${ mangleName( n ) }${ next }` );
 
 			} );
@@ -201,6 +213,20 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 			+ `\nexport { ${ Object.keys( names ).map( n => `${ mangleName( n ) } as ${ n }` ).join( ', ' ) } };\n`;
 
 		if ( REMOVE_OLD_FILES ) fs.unlinkSync( path2 );
+
+
+		const stack = [];
+		let currPath = path.dirname( transformName( path2 ) );
+		while ( ! fs.existsSync( currPath ) ) {
+
+
+			stack.push( currPath );
+			currPath = path.dirname( currPath );
+
+		}
+
+		stack.reverse().forEach( p => fs.mkdirSync( p ) );
+
 		fs.writeFileSync( transformName( path2 ), newContents, { encoding: 'utf8' } );
 
 	}
@@ -208,9 +234,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 } );
 
 // Import the newly exported objects into other files
-walk( path.join( __dirname, 'examples' ), path2 => {
-
-	if ( ! OVERWRITE_FILES && ! /\.module\.js$/.test( path2 ) ) return;
+walk( path.join( __dirname, 'examples/modules' ), path2 => {
 
 	if ( isIgnored( path2 ) ) {
 
@@ -250,8 +274,10 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 
 			} );
 
+
 		// Early out if there are no references to exported objects or to THREE
 		if ( ! /THREE\./g.test( trimmedContents ) && Object.keys( referencedPaths ).length === 0 ) return;
+
 
 		// Form the import statements for three and the other imported files
 		const directory = path.dirname( path2 );
@@ -360,7 +386,7 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 		}
 
 		// If nothing is imported then do nothing
-		// if ( OVERWRITE_FILES && scriptImports === null || scriptImports.length === 0 ) return;
+		// if ( scriptImports === null || scriptImports.length === 0 ) return;
 
 		// replace the script tag body contents in the html
 		newContents =
@@ -455,3 +481,37 @@ walk( path.join( __dirname, 'examples' ), path2 => {
 	}
 
 } );
+
+
+console.log();
+console.log( 'COMPLETE!' );
+console.log();
+
+if ( dupedNames.length === 0 ) {
+
+	console.log( 'No duplicate export names found' );
+
+} else {
+
+	console.warn( 'The following names were found exported multiple times : ' );
+	dupedNames.forEach( n => console.warn( ` - ${ n }` ) );
+
+}
+
+console.log();
+
+if ( skippedFiles.length === 0 ) {
+
+	console.log( 'No files were skipped when converting' );
+
+} else {
+
+	console.warn( 'The following files were skipped when converting : ' );
+	skippedFiles.forEach( p => console.warn( ` - ${ path.relative( __dirname, p ) }` ) );
+
+}
+
+console.log();
+
+console.log( 'The following files were converted : ' );
+Object.keys( path2names ).forEach( p => console.warn( ` - ${ path.relative( __dirname, p ) }` ) );
