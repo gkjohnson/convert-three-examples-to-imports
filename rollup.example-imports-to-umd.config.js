@@ -26,7 +26,11 @@ function createOutput( file ) {
 			globals: () => 'THREE',
 			extend: true,
 
-			indent: false
+			indent: false,
+			banner:
+				'/**\n' +
+				` * Generated from '${ path.relative( '.', inputPath.replace( /\\/, '/' ) ) }'\n` +
+				' **/\n'
 
 		}
 
