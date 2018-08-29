@@ -47,7 +47,3 @@
 - postprocessing / dof (using the wrong bokeh shader, should use bokeh2)
 - shadowmesh (click button) (button listener expects global function. fix separately)
 - raytracing sandbox (button refers to function in module code. fix separately)
-
-## Other
-- Some files don't get a new line after the initial export definitions 
-- Node shader code may have to be rearchitected
