@@ -4,7 +4,7 @@ Script for converting the javascript and html files in the examples folder of th
 
 [Converted Three.js Branch](https://github.com/gkjohnson/three.js/tree/examples-to-imports)
 
-[Converted Example Comparison](https://rawgit.com/gkjohnson/three.js/examples-to-imports/examples/index.module.html#webgl_animation_cloth)
+[Converted Example Comparison](https://rawgit.com/gkjohnson/three.js/examples-to-imports/examples/index.html#webgl_animation_cloth)
 
 ## Notes
 
