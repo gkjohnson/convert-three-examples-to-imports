@@ -1,6 +1,6 @@
 # convert-three-examples-to-imports
 
-Script for converting the javascript and html files in the examples folder of the [THREE.js](https://github.com/mrdoob/three.js) repo to use es6 imports.
+Script for converting the javascript and html files in the examples folder of the [THREE.js](https://github.com/mrdoob/three.js) repo to use ES6 imports.
 
 [Converted Three.js Branch](https://github.com/gkjohnson/three.js/tree/examples-to-imports)
 
